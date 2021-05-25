@@ -1,4 +1,5 @@
 require('dotenv').config()
+const { default: axios } = require('axios')
 const mongoose = require('mongoose')
 const contractutils = require('./contract.utils')
 const Tracker = require('./erc721tracker')
@@ -7,12 +8,14 @@ const Contracts = Tracker.trackedContracts
 require('../models/erc721token')
 const ERC721TOKEN = mongoose.model('ERC721TOKEN')
 
+const validatorAddress = '0x0000000000000000000000000000000000000000'
+
 const toLowerCase = (val) => {
   if (val) return val.toLowerCase()
   else return val
 }
 
-const trackERC721Distribution = async (contracts) => {
+const trackERC721Distribution = async (contracts, timesMap) => {
   try {
     let scs = new Map()
     let totalSupplies = new Map()
@@ -58,6 +61,21 @@ const trackERC721Distribution = async (contracts) => {
                     newTk.tokenID = tokenID
                     newTk.tokenURI = tokenURI
                     newTk.owner = to
+
+                    let tokenName = ''
+                    try {
+                      let metadata = await axios.get(tokenURI)
+                      if (metadata) tokenName = metadata.data.name
+                    } catch (error) {}
+                    newTk.name = tokenName
+                    // find the creation time
+                    try {
+                      let mintTime = parseInt(
+                        timesMap.get(contract.address + '-' + tokenID),
+                      )
+                      newTk.createdAt = new Date(mintTime * 1000)
+                    } catch (error) {}
+
                     await newTk.save()
                   }
                 }

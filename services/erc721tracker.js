@@ -22,6 +22,7 @@ const trackedAddresses = []
 const trackedContracts = []
 
 const trackerc721 = async (begin, end) => {
+  let timesMap = new Map() // maps block time to contract address + tokenID
   try {
     let contracts = new Array()
 
@@ -32,6 +33,12 @@ const trackerc721 = async (begin, end) => {
     if (tnxs.length == 0) return end
     if (tnxs) {
       let promises = tnxs.map(async (tnx) => {
+        if (tnx.from == validatorAddress) {
+          timesMap.set(
+            tnx.contractAddress + '-' + tnx.tokenID,
+            parseInt(tnx.timeStamp),
+          )
+        }
         let contractInfo = {
           address: toLowerCase(tnx.contractAddress),
           name: tnx.tokenName,
@@ -52,7 +59,7 @@ const trackerc721 = async (begin, end) => {
         }
       })
       await Promise.all(promises)
-      await collectionTracker.trackERC721Distribution(contracts)
+      await collectionTracker.trackERC721Distribution(contracts, timesMap)
     }
     return end
   } catch (error) {}
