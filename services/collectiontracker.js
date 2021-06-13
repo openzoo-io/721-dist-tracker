@@ -5,8 +5,7 @@ const contractutils = require('./contract.utils')
 const Tracker = require('./erc721tracker')
 const Contracts = Tracker.trackedContracts
 
-require('../models/erc721token')
-const ERC721TOKEN = mongoose.model('ERC721TOKEN')
+const NFTITEM = mongoose.model('NFTITEM')
 
 const validatorAddress = '0x0000000000000000000000000000000000000000'
 
@@ -45,9 +44,10 @@ const trackERC721Distribution = async (contracts, timesMap) => {
               } else {
                 let to = await sc.ownerOf(tokenID)
                 to = toLowerCase(to)
-                let erc721token = await ERC721TOKEN.findOne({
+                let erc721token = await NFTITEM.findOne({
                   contractAddress: contract.address,
                   tokenID: tokenID,
+                  tokenType: 721,
                 })
                 if (erc721token) {
                   if (erc721token.owner != to) {
@@ -56,11 +56,12 @@ const trackERC721Distribution = async (contracts, timesMap) => {
                   }
                 } else {
                   if (tokenURI.startsWith('https://')) {
-                    let newTk = new ERC721TOKEN()
+                    let newTk = new NFTITEM()
                     newTk.contractAddress = contract.address
                     newTk.tokenID = tokenID
                     newTk.tokenURI = tokenURI
                     newTk.owner = to
+                    newTk.tokenType = 721
 
                     let tokenName = ''
                     try {
