@@ -1,21 +1,7 @@
 require('dotenv').config()
 const mongoose = require('mongoose')
 
-require('./models/account')
-require('./models/bundle')
-require('./models/event')
-require('./models/erc721token')
-require('./models/erc721contract')
-require('./models/tradehistory')
-require('./models/collection')
-require('./models/abi')
-require('./models/listing')
-require('./models/notification')
-require('./models/bid')
-require('./models/highestblock')
-require('./models/offer')
-require('./models/category')
-require('./models/auction')
+require('./models/nftitems')
 
 const Tracker = require('./services/erc721tracker')
 
