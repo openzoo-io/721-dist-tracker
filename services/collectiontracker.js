@@ -17,6 +17,7 @@ const trackERC721Distribution = async (contracts, timesMap) => {
   try {
     let scs = new Map()
     let totalSupplies = new Map()
+    let currentlySavedCounts = new Map()
     try {
       let promises = contracts.map(async (contract) => {
         let sc = contractutils.loadContractFromAddress(contract.address)
@@ -25,6 +26,7 @@ const trackERC721Distribution = async (contracts, timesMap) => {
           totalSupply = parseFloat(totalSupply.toString())
           totalSupplies.set(contract.address, totalSupply)
           scs.set(contract.address, sc)
+          currentlySavedCounts.set(contract.address, 0)
         } catch (error) {}
       })
       await Promise.all(promises)
@@ -35,64 +37,60 @@ const trackERC721Distribution = async (contracts, timesMap) => {
       const promises = contracts.map(async (contract) => {
         let sc = scs.get(contract.address)
         if (sc) {
-          // let supply = totalSupplies.get(contract.address)
-          // if (supply >= tokenID) {
-          try {
-            let tokenURI = await sc.tokenURI(tokenID)
-            if (!tokenURI.startsWith('https://')) {
-            } else {
-              let to = await sc.ownerOf(tokenID)
-              to = toLowerCase(to)
-              let erc721token = await NFTITEM.findOne({
-                contractAddress: contract.address,
-                tokenID: tokenID,
-              })
-              if (erc721token) {
-                if (erc721token.owner != to) {
-                  erc721token.owner = to
-                  await erc721token.save()
-                }
+          let supply = totalSupplies.get(contract.address)
+          let currentlySaved = currentlySavedCounts.get(contract.address)
+          if (supply > currentlySaved) {
+            try {
+              let tokenURI = await sc.tokenURI(tokenID)
+              if (!tokenURI.startsWith('https://')) {
               } else {
-                if (tokenURI.startsWith('https://')) {
-                  let newTk = new NFTITEM()
-                  newTk.contractAddress = contract.address
-                  newTk.tokenID = tokenID
-                  newTk.tokenURI = tokenURI
-                  newTk.owner = to
-                  newTk.tokenType = 721
+                let to = await sc.ownerOf(tokenID)
+                to = toLowerCase(to)
+                let erc721token = await NFTITEM.findOne({
+                  contractAddress: contract.address,
+                  tokenID: tokenID,
+                })
+                if (erc721token) {
+                  if (erc721token.owner != to) {
+                    erc721token.owner = to
+                    await erc721token.save()
+                  }
+                } else {
+                  if (tokenURI.startsWith('https://')) {
+                    let newTk = new NFTITEM()
+                    newTk.contractAddress = contract.address
+                    newTk.tokenID = tokenID
+                    newTk.tokenURI = tokenURI
+                    newTk.owner = to
+                    newTk.tokenType = 721
 
-                  let tokenName = ''
-                  try {
-                    let metadata = await axios.get(tokenURI)
-                    if (metadata) tokenName = metadata.data.name
-                  } catch (error) {}
-                  newTk.name = tokenName
-                  // find the creation time
-                  try {
-                    let mintTime = parseInt(
-                      timesMap.get(contract.address + '-' + tokenID),
-                    )
-                    newTk.createdAt = new Date(mintTime * 1000)
-                  } catch (error) {}
+                    let tokenName = ''
+                    try {
+                      let metadata = await axios.get(tokenURI)
+                      if (metadata) tokenName = metadata.data.name
+                    } catch (error) {}
+                    newTk.name = tokenName
+                    // find the creation time
+                    try {
+                      let mintTime = parseInt(
+                        timesMap.get(contract.address + '-' + tokenID),
+                      )
+                      newTk.createdAt = new Date(mintTime * 1000)
+                    } catch (error) {}
 
-                  await newTk.save()
+                    await newTk.save()
+                  }
                 }
               }
+            } catch (error) {
+              // totalSupplies.set(contract.address, 0)
+              // total--
+            } finally {
             }
-          } catch (error) {
-            // totalSupplies.set(contract.address, 0)
-            // total--
-          } finally {
-            let currentSavedTokens = await NFTITEM.find({
-              contractAddress: contract.address,
-            })
-            let savedTotal = currentSavedTokens.length
-            if (savedTotal == totalSupplies.get(contract.address)) {
-              totalSupplies.set(contract.address, 0)
-              total--
-            }
+          } else {
+            totalSupplies.set(contract.address, 0)
+            total--
           }
-          // }
         }
       })
       await Promise.all(promises)
