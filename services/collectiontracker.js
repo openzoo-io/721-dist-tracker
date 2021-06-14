@@ -1,102 +1,114 @@
 require('dotenv').config()
-const { default: axios } = require('axios')
-const mongoose = require('mongoose')
-const contractutils = require('./contract.utils')
-const Tracker = require('./erc721tracker')
+const ethers = require('ethers')
 
+const { default: axios } = require('axios')
+
+const mongoose = require('mongoose')
 const NFTITEM = mongoose.model('NFTITEM')
 
-const validatorAddress = '0x0000000000000000000000000000000000000000'
+const contractutils = require('./contract.utils')
 
+const rpcapi = process.env.MAINNET_RPC
+const provider = new ethers.providers.JsonRpcProvider(rpcapi, 250)
+const provider1 = new ethers.providers.JsonRpcProvider(
+  'https://rpc2.fantom.network',
+  250,
+)
 const toLowerCase = (val) => {
   if (val) return val.toLowerCase()
   else return val
 }
 
-const trackERC721Distribution = async (contracts, timesMap) => {
-  try {
-    let scs = new Map()
-    let totalSupplies = new Map()
-    let currentlySavedCounts = new Map()
-    try {
-      let promises = contracts.map(async (contract) => {
-        let sc = contractutils.loadContractFromAddress(contract.address)
-        try {
-          let totalSupply = await sc.totalSupply()
-          totalSupply = parseFloat(totalSupply.toString())
-          totalSupplies.set(contract.address, totalSupply)
-          scs.set(contract.address, sc)
-          currentlySavedCounts.set(contract.address, 0)
-        } catch (error) {}
-      })
-      await Promise.all(promises)
-    } catch (error) {}
-    let total = contracts.length
-    let tokenID = 1
-    while (total > 0) {
-      const promises = contracts.map(async (contract) => {
-        let sc = scs.get(contract.address)
-        if (sc) {
-          let supply = totalSupplies.get(contract.address)
-          let currentlySaved = currentlySavedCounts.get(contract.address)
-          if (supply > currentlySaved) {
+const extractAddress = (data) => {
+  let length = data.length
+  return data.substring(0, 2) + data.substring(length - 40)
+}
+
+const parseTokenID = (hexData) => {
+  return parseInt(hexData.toString())
+}
+
+const getBlockTime = async (blockNumber) => {
+  let block = await provider1.getBlock(parseInt(blockNumber))
+  let blockTime = block.timestamp
+  blockTime = new Date(blockTime * 1000)
+  return blockTime
+}
+
+const trackSingleContract = async (sc, address) => {
+  let eventLogs = await provider.getLogs({
+    address: address,
+    fromBlock: 0,
+    topics: [
+      ethers.utils.id('Transfer(address,address,uint256)'),
+      null,
+      null,
+      null,
+    ],
+  })
+
+  let tokenIDs = []
+  let ownerMap = new Map()
+  let blockNumberMap = new Map()
+
+  eventLogs.map((eventLog) => {
+    let topics = eventLog.topics
+    let receiver = toLowerCase(extractAddress(topics[2]))
+    let tokenID = parseTokenID(topics[3])
+    blockNumberMap.set(tokenID, eventLog.blockNumber)
+    ownerMap.set(tokenID, receiver)
+    if (!tokenIDs.includes(tokenID)) tokenIDs.push(tokenID)
+  })
+
+  let promise = tokenIDs.map(async (tokenID, index) => {
+    setTimeout(async () => {
+      try {
+        let erc721token = await NFTITEM.findOne({
+          contractAddress: address,
+          tokenID: tokenID,
+        })
+        if (erc721token) {
+          if (erc721token.owner != ownerMap.get(tokenID)) {
+            erc721token.owner = ownerMap.get(tokenID)
+            await erc721token.save()
+          }
+        } else {
+          let tokenURI = await sc.tokenURI(tokenID)
+          if (tokenURI.startsWith('https://')) {
+            let newTk = new NFTITEM()
+            newTk.contractAddress = address
+            newTk.tokenID = tokenID
+            newTk.tokenURI = tokenURI
+            newTk.owner = ownerMap.get(tokenID)
+            newTk.tokenType = 721
+            let tokenName = ''
             try {
-              let tokenURI = await sc.tokenURI(tokenID)
-              if (!tokenURI.startsWith('https://')) {
-              } else {
-                let to = await sc.ownerOf(tokenID)
-                to = toLowerCase(to)
-                let erc721token = await NFTITEM.findOne({
-                  contractAddress: contract.address,
-                  tokenID: tokenID,
-                })
-                if (erc721token) {
-                  if (erc721token.owner != to) {
-                    erc721token.owner = to
-                    await erc721token.save()
-                  }
-                } else {
-                  if (tokenURI.startsWith('https://')) {
-                    let newTk = new NFTITEM()
-                    newTk.contractAddress = contract.address
-                    newTk.tokenID = tokenID
-                    newTk.tokenURI = tokenURI
-                    newTk.owner = to
-                    newTk.tokenType = 721
-
-                    let tokenName = ''
-                    try {
-                      let metadata = await axios.get(tokenURI)
-                      if (metadata) tokenName = metadata.data.name
-                    } catch (error) {}
-                    newTk.name = tokenName
-                    // find the creation time
-                    try {
-                      let mintTime = parseInt(
-                        timesMap.get(contract.address + '-' + tokenID),
-                      )
-                      newTk.createdAt = new Date(mintTime * 1000)
-                    } catch (error) {}
-
-                    await newTk.save()
-                  }
-                }
-              }
-            } catch (error) {
-              // totalSupplies.set(contract.address, 0)
-              // total--
-            } finally {
-            }
-          } else {
-            totalSupplies.set(contract.address, 0)
-            total--
+              let metadata = await axios.get(tokenURI)
+              if (metadata) tokenName = metadata.data.name
+            } catch (error) {}
+            newTk.name = tokenName
+            try {
+              let mintTime = await getBlockTime(blockNumberMap.get(tokenID))
+              newTk.createdAt = mintTime
+            } catch (error) {}
+            try {
+              await newTk.save()
+            } catch (error) {}
           }
         }
-      })
-      await Promise.all(promises)
-      tokenID++
-    }
-  } catch (error) {}
+      } catch (error) {}
+    }, index * 100)
+  })
+
+  await Promise.all(promise)
+}
+
+const trackERC721Distribution = async (contracts) => {
+  let promise = contracts.map(async (contract) => {
+    let sc = contractutils.loadContractFromAddress(contract.address)
+    await trackSingleContract(sc, contract.address)
+  })
+  await Promise.all(promise)
 }
 
 const collectionTracker = {
