@@ -80,7 +80,6 @@ const trackSingleContract = async (sc, address) => {
             newTk.tokenID = tokenID
             newTk.tokenURI = tokenURI
             newTk.owner = ownerMap.get(tokenID)
-            newTk.tokenType = 721
             let tokenName = ''
             try {
               let metadata = await axios.get(tokenURI)
