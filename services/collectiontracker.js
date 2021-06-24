@@ -81,9 +81,13 @@ const trackSingleContract = async (sc, address) => {
             newTk.tokenURI = tokenURI
             newTk.owner = ownerMap.get(tokenID)
             let tokenName = ''
+            let imageURL = ''
             try {
               let metadata = await axios.get(tokenURI)
-              if (metadata) tokenName = metadata.data.name
+              if (metadata) {
+                tokenName = metadata.data.name
+                imageURL = metadata.data.image
+              }
             } catch (error) {}
             newTk.name = tokenName
             try {
