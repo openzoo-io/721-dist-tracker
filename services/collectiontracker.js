@@ -90,6 +90,7 @@ const trackSingleContract = async (sc, address) => {
               }
             } catch (error) {}
             newTk.name = tokenName
+            newTk.imageURL = imageURL
             try {
               let mintTime = await getBlockTime(blockNumberMap.get(tokenID))
               newTk.createdAt = mintTime
