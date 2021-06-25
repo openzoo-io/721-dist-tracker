@@ -68,18 +68,18 @@ const trackSingleContract = async (sc, address) => {
           tokenID: tokenID,
         })
         if (erc721token) {
-          // if (erc721token.owner != ownerMap.get(tokenID)) {
-          //   erc721token.owner = ownerMap.get(tokenID)
-          //   await erc721token.save()
-          // }
-          let createTime = await getBlockTime(blockNumberMap.get(tokenID))
-          erc721token.createdAt = createTime
-          console.log(createTime)
-          let _saved = await erc721token.save()
-          if (_saved)
-            console.log(`saved to ${createTime} - ${tokenID} - ${address}`)
+          if (erc721token.owner != ownerMap.get(tokenID)) {
+            erc721token.owner = ownerMap.get(tokenID)
+            await erc721token.save()
+          }
+          // let createTime = await getBlockTime(blockNumberMap.get(tokenID))
+          // erc721token.createdAt = createTime
+          // console.log(createTime)
+          // let _saved = await erc721token.save()
+          // if (_saved)
+          //   console.log(`saved to ${createTime} - ${tokenID} - ${address}`)
         } else {
-          return
+          // return
           let tokenURI = await sc.tokenURI(tokenID)
           if (tokenURI.startsWith('https://')) {
             let newTk = new NFTITEM()
