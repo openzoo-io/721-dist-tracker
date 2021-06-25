@@ -11,7 +11,7 @@ const contractutils = require('./contract.utils')
 const rpcapi = process.env.MAINNET_RPC
 const provider = new ethers.providers.JsonRpcProvider(rpcapi, 250)
 const provider1 = new ethers.providers.JsonRpcProvider(
-  'https://rpc2.fantom.network',
+  'https://rpc.fantom.network',
   250,
 )
 const toLowerCase = (val) => {
@@ -68,11 +68,18 @@ const trackSingleContract = async (sc, address) => {
           tokenID: tokenID,
         })
         if (erc721token) {
-          if (erc721token.owner != ownerMap.get(tokenID)) {
-            erc721token.owner = ownerMap.get(tokenID)
-            await erc721token.save()
-          }
+          // if (erc721token.owner != ownerMap.get(tokenID)) {
+          //   erc721token.owner = ownerMap.get(tokenID)
+          //   await erc721token.save()
+          // }
+          let createTime = await getBlockTime(blockNumberMap.get(tokenID))
+          erc721token.createdAt = createTime
+          console.log(createTime)
+          let _saved = await erc721token.save()
+          if (_saved)
+            console.log(`saved to ${createTime} - ${tokenID} - ${address}`)
         } else {
+          return
           let tokenURI = await sc.tokenURI(tokenID)
           if (tokenURI.startsWith('https://')) {
             let newTk = new NFTITEM()
