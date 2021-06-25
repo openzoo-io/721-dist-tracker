@@ -107,19 +107,22 @@ const trackSingleContract = async (sc, address) => {
             } catch (error) {}
           }
         }
-      } catch (error) {}
+      } catch (error) {
+        console
+      }
     }, index * 100)
   })
 
   await Promise.all(promise)
 }
 
-const trackERC721Distribution = async (contracts) => {
-  let promise = contracts.map(async (contract) => {
+const trackERC721Distribution = (contracts) => {
+  let promise = contracts.map((contract) => {
     let sc = contractutils.loadContractFromAddress(contract.address)
-    await trackSingleContract(sc, contract.address)
+    trackSingleContract(sc, contract.address)
+    // await trackSingleContract(sc, contract.address)
   })
-  await Promise.all(promise)
+  // await Promise.all(promise)
 }
 
 const collectionTracker = {
