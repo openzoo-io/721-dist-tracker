@@ -2,15 +2,17 @@ require('dotenv').config()
 const axios = require('axios')
 const ethers = require('ethers')
 
-let rpcapi = process.env.MAINNET_RPC
+const rpcapi = process.env.NETWORK_RPC
+const chaindID = parseInt(process.env.NETWORK_CHAINID)
 
-const provider = new ethers.providers.JsonRpcProvider(rpcapi, 250)
+const provider = new ethers.providers.JsonRpcProvider(rpcapi, chaindID)
 
 const collectionTracker = require('./collectiontracker')
 const contractutils = require('./contract.utils')
 
 const ftmScanApiKey = process.env.FTM_SCAN_API_KEY
 const validatorAddress = process.env.VALIDATORADDRESS
+const ftmScanURL = process.env.FTM_SCAN_URL
 const limit = 99999999999
 
 const toLowerCase = (val) => {
@@ -25,7 +27,7 @@ const trackerc721 = async (begin, end) => {
   try {
     let contracts = new Array()
 
-    let request = `https://api.ftmscan.com/api?module=account&action=tokennfttx&address=${validatorAddress}&startblock=${begin}&endblock=${end}&sort=asc&apikey=${ftmScanApiKey}`
+    let request = `${ftmScanURL}api?module=account&action=tokennfttx&address=${validatorAddress}&startblock=${begin}&endblock=${end}&sort=asc&apikey=${ftmScanApiKey}`
     let result = await axios.get(request)
     let tnxs = result.data.result
     if (tnxs) {

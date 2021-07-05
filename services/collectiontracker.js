@@ -8,11 +8,12 @@ const NFTITEM = mongoose.model('NFTITEM')
 
 const contractutils = require('./contract.utils')
 
-const rpcapi = process.env.MAINNET_RPC
-const provider = new ethers.providers.JsonRpcProvider(rpcapi, 250)
+const rpcapi = process.env.NETWORK_RPC
+const chainID = parseInt(process.env.NETWORK_CHAINID)
+const provider = new ethers.providers.JsonRpcProvider(rpcapi, chainID)
 const provider1 = new ethers.providers.JsonRpcProvider(
-  'https://rpc.fantom.network',
-  250,
+  process.env.NETWORK_RPC1,
+  chainID,
 )
 const toLowerCase = (val) => {
   if (val) return val.toLowerCase()
@@ -72,12 +73,6 @@ const trackSingleContract = async (sc, address) => {
             erc721token.owner = ownerMap.get(tokenID)
             await erc721token.save()
           }
-          // let createTime = await getBlockTime(blockNumberMap.get(tokenID))
-          // erc721token.createdAt = createTime
-          // console.log(createTime)
-          // let _saved = await erc721token.save()
-          // if (_saved)
-          //   console.log(`saved to ${createTime} - ${tokenID} - ${address}`)
         } else {
           // return
           let tokenURI = await sc.tokenURI(tokenID)
