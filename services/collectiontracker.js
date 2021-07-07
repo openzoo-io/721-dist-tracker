@@ -77,34 +77,43 @@ const trackSingleContract = async (sc, address) => {
           // return
           let tokenURI = await sc.tokenURI(tokenID)
           if (tokenURI.startsWith('https://')) {
-            let newTk = new NFTITEM()
-            newTk.contractAddress = address
-            newTk.tokenID = tokenID
-            newTk.tokenURI = tokenURI
-            newTk.owner = ownerMap.get(tokenID)
-            let tokenName = ''
-            let imageURL = ''
+            // if (tokenURI.endsWith('CqT'))
             try {
-              let metadata = await axios.get(tokenURI)
-              if (metadata) {
-                tokenName = metadata.data.name
-                imageURL = metadata.data.image
+              let newTk = new NFTITEM()
+              newTk.contractAddress = address
+              newTk.tokenID = tokenID
+              newTk.tokenURI = tokenURI
+              newTk.owner = ownerMap.get(tokenID)
+              let tokenName = ''
+              let imageURL = ''
+              try {
+                let metadata = await axios.get(tokenURI)
+                if (metadata) {
+                  tokenName = metadata.data.name
+                  imageURL = metadata.data.image
+                }
+              } catch (error) {
+                console.log(error)
               }
-            } catch (error) {}
-            newTk.name = tokenName
-            newTk.imageURL = imageURL
-            try {
-              let mintTime = await getBlockTime(blockNumberMap.get(tokenID))
-              newTk.createdAt = mintTime
-            } catch (error) {}
-            try {
-              await newTk.save()
-            } catch (error) {}
+              newTk.name = tokenName
+              newTk.imageURL = imageURL
+              try {
+                let mintTime = await getBlockTime(blockNumberMap.get(tokenID))
+                newTk.createdAt = mintTime
+              } catch (error) {
+                console.log(error)
+              }
+              try {
+                await newTk.save()
+              } catch (error) {
+                console.log(error)
+              }
+            } catch (error) {
+              console.log(error)
+            }
           }
         }
-      } catch (error) {
-        console
-      }
+      } catch (error) {}
     }, index * 100)
   })
 
