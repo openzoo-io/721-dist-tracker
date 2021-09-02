@@ -2,6 +2,7 @@ require('dotenv').config()
 const mongoose = require('mongoose')
 
 require('./models/nftitems')
+require('./models/category')
 
 const Tracker = require('./services/erc721tracker')
 
