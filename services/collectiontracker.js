@@ -5,6 +5,7 @@ const { default: axios } = require('axios')
 
 const mongoose = require('mongoose')
 const NFTITEM = mongoose.model('NFTITEM')
+const Category = mongoose.model('Category')
 
 const contractutils = require('./contract.utils')
 
@@ -37,6 +38,12 @@ const getBlockTime = async (blockNumber) => {
 }
 
 const trackSingleContract = async (sc, address) => {
+  try {
+    let category = new Category()
+    category.minterAddress = contractInfo.address
+    category.type = 721
+    await category.save()
+  } catch (error) {}
   let eventLogs = await provider.getLogs({
     address: address,
     fromBlock: 0,
