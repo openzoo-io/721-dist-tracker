@@ -3,6 +3,7 @@ const mongoose = require('mongoose')
 
 require('./models/nftitems')
 require('./models/category')
+require('./models/erc721contract')
 
 const Tracker = require('./services/erc721tracker')
 

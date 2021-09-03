@@ -6,6 +6,7 @@ const { default: axios } = require('axios')
 const mongoose = require('mongoose')
 const NFTITEM = mongoose.model('NFTITEM')
 const Category = mongoose.model('Category')
+const ERC721CONTRACT = mongoose.model('ERC721CONTRACT')
 
 const contractutils = require('./contract.utils')
 
@@ -35,6 +36,26 @@ const getBlockTime = async (blockNumber) => {
   let blockTime = block.timestamp
   blockTime = new Date(blockTime * 1000)
   return blockTime
+}
+const bannedCollections = new Map()
+
+const isBannedCollection = async (contractAddress) => {
+  let isBanned = bannedCollections.get(contractAddress)
+  if (isBanned) return true
+  try {
+    let contract_721 = await ERC721CONTRACT.findOne({
+      address: contractAddress,
+    })
+    if (contract_721) {
+      bannedCollections.set(contractAddress, true)
+      return true
+    } else {
+      bannedCollections.set(contractAddress, false)
+      return false
+    }
+  } catch (error) {
+    return false
+  }
 }
 
 const trackSingleContract = async (sc, address) => {
@@ -111,6 +132,8 @@ const trackSingleContract = async (sc, address) => {
                 console.log(error)
               }
               try {
+                let isBanned = await isBannedCollection(address)
+                newTk.isAppropriate = !isBanned
                 await newTk.save()
               } catch (error) {
                 console.log(error)
