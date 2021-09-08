@@ -55,14 +55,12 @@ const trackSingleContract = async (address) => {
     if (!tokenIDs.includes(tokenID)) tokenIDs.push(tokenID)
   })
 
-  let promise = tokenIDs.map(async (tokenID, index) => {
-    setTimeout(async () => {
+  tokenIDs.map((tokenID, index) => {
+    setTimeout(() => {
       let to = ownerMap.get(tokenID)
-      await callAPI('handle721Transfer', { address, to, tokenID })
+      callAPI('handle721Transfer', { address, to, tokenID })
     }, index * 100)
   })
-
-  await Promise.all(promise)
 }
 
 const trackERC721Distribution = (addresses) => {
