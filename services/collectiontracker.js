@@ -24,11 +24,16 @@ const parseTokenID = (hexData) => {
 const apiEndPoint = process.env.API_ENDPOINT
 
 const callAPI = async (endpoint, data) => {
-  return await axios({
-    method: 'post',
-    url: apiEndPoint + endpoint,
-    data,
-  })
+  try {
+    return axios({
+      method: 'post',
+      url: apiEndPoint + endpoint,
+      data,
+    })
+  } catch (err) {
+    console.error('[callAPI error] failed for: ', {data});
+    console.error(err.message);
+  }
 }
 
 const trackSingleContract = async (address) => {
