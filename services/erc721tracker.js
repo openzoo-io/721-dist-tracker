@@ -24,7 +24,8 @@ const trackerc721 = async () => {
             contracts.push(address)
           }
         })
-        trackERC721Distribution(contracts)
+        console.info(`Tracking ${contracts.length} contracts`);
+        await trackERC721Distribution(contracts)
       }
     }
   } catch (error) {
@@ -38,7 +39,7 @@ const trackAll721s = async () => {
       await trackerc721()
       setTimeout(async () => {
         await func()
-      }, 1000 * 60 * 10 * 3)
+      }, 1000 * 60)
     } catch (error) {}
   }
   await func()

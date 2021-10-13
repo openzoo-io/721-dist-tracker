@@ -24,8 +24,7 @@ const parseTokenID = (hexData) => {
 const apiEndPoint = process.env.API_ENDPOINT
 
 const callAPI = async (endpoint, data) => {
-  console.log(data)
-  await axios({
+  return await axios({
     method: 'post',
     url: apiEndPoint + endpoint,
     data,
@@ -33,16 +32,23 @@ const callAPI = async (endpoint, data) => {
 }
 
 const trackSingleContract = async (address) => {
-  let eventLogs = await provider.getLogs({
-    address: address,
-    fromBlock: 0,
-    topics: [
-      ethers.utils.id('Transfer(address,address,uint256)'),
-      null,
-      null,
-      null,
-    ],
-  })
+  console.log(`Starting contract: ${address}`)
+  let eventLogs
+  try {
+    eventLogs = await provider.getLogs({
+      address: address,
+      fromBlock: 0,
+      topics: [
+        ethers.utils.id('Transfer(address,address,uint256)'),
+        null,
+        null,
+        null,
+      ],
+    })
+  } catch (err) {
+    console.error(`Failed to get logs for contract: ${address}`, err.message);
+    return;
+  }
 
   let tokenIDs = []
   let ownerMap = new Map()
@@ -55,18 +61,49 @@ const trackSingleContract = async (address) => {
     if (!tokenIDs.includes(tokenID)) tokenIDs.push(tokenID)
   })
 
-  tokenIDs.map((tokenID, index) => {
-    setTimeout(() => {
-      let to = ownerMap.get(tokenID)
-      callAPI('handle721Transfer', { address, to, tokenID })
-    }, index * 100)
+  console.info(`[${address}] sending ${tokenIDs.length} transfer events`);
+
+  const concurrency = 30;
+  const batches = Math.ceil(tokenIDs.length / concurrency);
+
+  let batch = 1;
+  let lastStop = 0;
+  let status;
+
+  return new Promise((resolve) => {
+    let interval = setInterval(async () => {
+      if (batch > batches) {
+        console.info(`[${address}] all batches send`);
+        clearInterval(interval);
+        return resolve()
+      }
+
+      if (status === "pending") {
+        console.debug(`Waiting for batch: ${batch} to finish`);
+        return;
+      }
+
+      status = "pending";
+      console.debug(`Running batch ${batch} of ${batches} [${lastStop}, ${lastStop + concurrency}]`);
+      const tokensInBatch = tokenIDs.slice(lastStop, lastStop + concurrency < tokenIDs.length ? lastStop + concurrency : tokenIDs.length - 1);
+      const promises = tokensInBatch.map(async (tokenID) => {
+        const to = ownerMap.get(tokenID);
+        return callAPI('handle721Transfer', {address, to, tokenID})
+      });
+      await Promise.all(promises);
+
+      console.debug(`Batch: ${batch} finished`);
+      batch += 1;
+      lastStop = lastStop + concurrency;
+      status = "completed"
+    }, 100);
   })
 }
 
-const trackERC721Distribution = (addresses) => {
-  addresses.map((address) => {
-    trackSingleContract(address)
-  })
+const trackERC721Distribution = async (addresses) => {
+  for (const address of addresses) {
+    await trackSingleContract(address)
+  }
 }
 
 module.exports = trackERC721Distribution
