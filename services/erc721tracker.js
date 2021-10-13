@@ -24,7 +24,7 @@ const trackerc721 = async () => {
             contracts.push(address)
           }
         })
-        console.info(`Tracking ${contracts.length} contracts`);
+        console.info(`Tracking ${contracts.length} new contracts`);
         await trackERC721Distribution(contracts)
       }
     }
