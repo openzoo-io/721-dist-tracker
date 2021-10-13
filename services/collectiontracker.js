@@ -77,30 +77,35 @@ const trackSingleContract = async (address) => {
 
   return new Promise((resolve) => {
     let interval = setInterval(async () => {
-      if (batch > batches) {
-        console.info(`[${address}] all batches send`);
-        clearInterval(interval);
-        return resolve()
+      try {
+        if (batch > batches) {
+          console.info(`[${address}] all batches send`);
+          clearInterval(interval);
+          return resolve()
+        }
+
+        if (status === "pending") {
+          console.debug(`Waiting for batch: ${batch} to finish`);
+          return;
+        }
+
+        status = "pending";
+        console.debug(`Running batch ${batch} of ${batches} [${lastStop}, ${lastStop + concurrency}]`);
+        const tokensInBatch = tokenIDs.slice(lastStop, lastStop + concurrency < tokenIDs.length ? lastStop + concurrency : tokenIDs.length - 1);
+        const promises = tokensInBatch.map(async (tokenID) => {
+          const to = ownerMap.get(tokenID);
+          return callAPI('handle721Transfer', {address, to, tokenID})
+        });
+
+        await Promise.all(promises);
+        console.debug(`Batch: ${batch} finished`);
+      } catch (err) {
+        console.error(`Batch: ${batch} error: `,  err);
+      } finally {
+        batch += 1;
+        lastStop = lastStop + concurrency;
+        status = "completed"
       }
-
-      if (status === "pending") {
-        console.debug(`Waiting for batch: ${batch} to finish`);
-        return;
-      }
-
-      status = "pending";
-      console.debug(`Running batch ${batch} of ${batches} [${lastStop}, ${lastStop + concurrency}]`);
-      const tokensInBatch = tokenIDs.slice(lastStop, lastStop + concurrency < tokenIDs.length ? lastStop + concurrency : tokenIDs.length - 1);
-      const promises = tokensInBatch.map(async (tokenID) => {
-        const to = ownerMap.get(tokenID);
-        return callAPI('handle721Transfer', {address, to, tokenID})
-      });
-      await Promise.all(promises);
-
-      console.debug(`Batch: ${batch} finished`);
-      batch += 1;
-      lastStop = lastStop + concurrency;
-      status = "completed"
     }, 100);
   })
 }
