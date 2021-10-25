@@ -439,7 +439,7 @@ const trackSingleContract = async (address) => {
 
         status = "pending";
         console.debug(`Running batch ${batch} of ${batches} [${lastStop}, ${lastStop + concurrency}]`);
-        const tokensInBatch = tokenIDs.slice(lastStop, lastStop + concurrency < tokenIDs.length ? lastStop + concurrency : tokenIDs.length - 1);
+        const tokensInBatch = tokenIDs.slice(lastStop, lastStop + concurrency < tokenIDs.length ? lastStop + concurrency : tokenIDs.length);
         const promises = tokensInBatch.map(async (tokenID) => {
           const to = ownerMap.get(tokenID);
           return callAPI('handle721Transfer', {address, to, tokenID})
