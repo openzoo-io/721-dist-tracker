@@ -385,8 +385,8 @@ const callAPI = async (endpoint, data) => {
     } catch (err) {
       console.error('[callAPI error] failed for: ', {data});
       console.error(err.message);
-      console.log('retry after 5 seconds.')
-      await sleep(5000);
+      console.log(`retry after ${5*times} seconds.`)
+      await sleep(5000*times);
       times++;
     }
   }
