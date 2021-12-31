@@ -1,5 +1,6 @@
 require('dotenv').config()
 const ethers = require('ethers')
+const sleep = require('ko-sleep')
 
 const { default: axios } = require('axios')
 
@@ -372,15 +373,21 @@ const ERC721_ABI = [
 ]
 
 const callAPI = async (endpoint, data) => {
-  try {
-    return axios({
-      method: 'post',
-      url: apiEndPoint + endpoint,
-      data,
-    })
-  } catch (err) {
-    console.error('[callAPI error] failed for: ', {data});
-    console.error(err.message);
+  let times = 0;
+  while(times < 100) {
+    try {
+      let ret = await axios({
+        method: 'post',
+        url: apiEndPoint + endpoint,
+        data,
+      });
+      return ret;
+    } catch (err) {
+      console.error('[callAPI error] failed for: ', {data});
+      console.error(err.message);
+      await sleep(5000);
+      times++;
+    }
   }
 }
 
