@@ -462,7 +462,7 @@ const trackSingleContract = async (address) => {
         lastStop = lastStop + concurrency;
         status = "completed"
       }
-    }, 200);
+    }, 2000);
   })
 }
 
