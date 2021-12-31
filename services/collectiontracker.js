@@ -434,7 +434,9 @@ const trackSingleContract = async (address) => {
   for (let i=0; i<tokenIDs.length; i++) {
     const tokenID = tokenIDs[i];
     const to = ownerMap.get(tokenID);
+    console.info('Importing NFT:', address, to, tokenID);
     await callAPI('handle721Transfer', {address, to, tokenID});
+    console.info('Importing NFT finished! ', address, to, tokenID);
   }
 
   // return new Promise((resolve) => {
