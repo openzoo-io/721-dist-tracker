@@ -431,39 +431,45 @@ const trackSingleContract = async (address) => {
   let lastStop = 0;
   let status;
 
-  return new Promise((resolve) => {
-    let interval = setInterval(async () => {
-      try {
-        if (batch > batches) {
-          console.info(`[${address}] all batches send`);
-          clearInterval(interval);
-          return resolve()
-        }
+  for (let i=0; i<tokenIDs.length; i++) {
+    const tokenID = tokenIDs[i];
+    const to = ownerMap.get(tokenID);
+    await callAPI('handle721Transfer', {address, to, tokenID});
+  }
 
-        if (status === "pending") {
-          console.debug(`Waiting for batch: ${batch} to finish`);
-          return;
-        }
+  // return new Promise((resolve) => {
+  //   let interval = setInterval(async () => {
+  //     try {
+  //       if (batch > batches) {
+  //         console.info(`[${address}] all batches send`);
+  //         clearInterval(interval);
+  //         return resolve()
+  //       }
 
-        status = "pending";
-        console.debug(`Running batch ${batch} of ${batches} [${lastStop}, ${lastStop + concurrency}]`);
-        const tokensInBatch = tokenIDs.slice(lastStop, lastStop + concurrency < tokenIDs.length ? lastStop + concurrency : tokenIDs.length);
-        const promises = tokensInBatch.map(async (tokenID) => {
-          const to = ownerMap.get(tokenID);
-          return callAPI('handle721Transfer', {address, to, tokenID})
-        });
+  //       if (status === "pending") {
+  //         console.debug(`Waiting for batch: ${batch} to finish`);
+  //         return;
+  //       }
 
-        await Promise.all(promises);
-        console.debug(`Batch: ${batch} finished`);
-      } catch (err) {
-        console.error(`Batch: ${batch} error: `,  err);
-      } finally {
-        batch += 1;
-        lastStop = lastStop + concurrency;
-        status = "completed"
-      }
-    }, 2000);
-  })
+  //       status = "pending";
+  //       console.debug(`Running batch ${batch} of ${batches} [${lastStop}, ${lastStop + concurrency}]`);
+  //       const tokensInBatch = tokenIDs.slice(lastStop, lastStop + concurrency < tokenIDs.length ? lastStop + concurrency : tokenIDs.length);
+  //       const promises = tokensInBatch.map(async (tokenID) => {
+  //         const to = ownerMap.get(tokenID);
+  //         return callAPI('handle721Transfer', {address, to, tokenID})
+  //       });
+
+  //       await Promise.all(promises);
+  //       console.debug(`Batch: ${batch} finished`);
+  //     } catch (err) {
+  //       console.error(`Batch: ${batch} error: `,  err);
+  //     } finally {
+  //       batch += 1;
+  //       lastStop = lastStop + concurrency;
+  //       status = "completed"
+  //     }
+  //   }, 2000);
+  // })
 }
 
 const trackERC721Distribution = async (addresses) => {
