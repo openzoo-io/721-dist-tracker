@@ -11,18 +11,6 @@ let dbCollection = null;
 let trackedAddresses = []
 const trackedContracts = []
 
-const readTrackedFromApi = async () => {
-  const response = await axios.get(apiEndPoint + '/tracked')
-  const tracked = response.data
-  tracked.forEach((t) => {
-    if (t.type === 'address') {
-      trackedAddresses.push(t.address)
-    } else if (t.type === 'contract') {
-      trackedContracts.push(t.address)
-    }
-  })
-
-
 const trackerc721 = async () => {
   let contracts = []
   try {
