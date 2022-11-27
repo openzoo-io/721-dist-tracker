@@ -31,7 +31,8 @@ const trackerc721 = async () => {
       let data = response.data
       if (data.status == 'success') {
         data = data.data
-        data.map((address) => {
+        for (let i = 0; i < data.length; i++) {
+          let address = data[i];
           if (!trackedAddresses.includes(address)) {
             let sc = contractutils.loadContractFromAddress(address)
             trackedAddresses.push(address)
@@ -39,7 +40,8 @@ const trackerc721 = async () => {
             contracts.push(address)
             await dbCollection.insertOne({ address: address, type: 'erc721' });
           }
-        })
+        }
+
         console.info(`Tracking ${contracts.length} new contracts`);
         await trackERC721Distribution(contracts)
       }
